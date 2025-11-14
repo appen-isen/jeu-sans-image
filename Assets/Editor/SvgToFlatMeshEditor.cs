@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using Unity.VectorGraphics; // From com.unity.vectorgraphics
@@ -14,10 +13,7 @@ public class SvgToFlatMeshEditor : EditorWindow
 {
     TextAsset svgFile;
     float pixelsPerUnit = 100.0f;
-    Vector2 scale = Vector2.one;
-    Material defaultMaterial;
     Transform parentTransform;
-    bool generateColliders = true;
     float meshScale = 1f;
     VectorUtils.TessellationOptions tessOptions = new VectorUtils.TessellationOptions()
     {
@@ -42,9 +38,7 @@ public class SvgToFlatMeshEditor : EditorWindow
         svgFile = (TextAsset)EditorGUILayout.ObjectField("SVG File (.svg)", svgFile, typeof(TextAsset), false);
         pixelsPerUnit = EditorGUILayout.FloatField(new GUIContent("Pixels Per Unit", "Rasterization scale used by VectorUtils. Higher = more detail"), pixelsPerUnit);
         meshScale = EditorGUILayout.FloatField(new GUIContent("Global Mesh Scale", "Scale applied to resulting mesh in world units"), meshScale);
-        defaultMaterial = (Material)EditorGUILayout.ObjectField("Default Material", defaultMaterial, typeof(Material), false);
         parentTransform = (Transform)EditorGUILayout.ObjectField("Parent Transform", parentTransform, typeof(Transform), true);
-        generateColliders = EditorGUILayout.Toggle("Generate MeshColliders", generateColliders);
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Tessellation Options", EditorStyles.boldLabel);
@@ -153,30 +147,12 @@ public class SvgToFlatMeshEditor : EditorWindow
             var mf = go.AddComponent<MeshFilter>();
             mf.sharedMesh = mesh;
 
-            var mr = go.AddComponent<MeshRenderer>();
-            if (defaultMaterial != null)
-            {
-                // instantiate a material so each region can have its own color without overwriting the original asset
-                Material matInstance = new Material(defaultMaterial);
-                matInstance.color = color;
-                mr.sharedMaterial = matInstance;
-            }
-            else
-            {
-                // Create a quick default material
-                var mat = new Material(Shader.Find("Standard"));
-                mat.color = color;
-                mr.sharedMaterial = mat;
-            }
+            // Generate collider
+            var mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = mesh;
+            mc.convex = false; // keep non-convex for flat terrain; set to true if needed for rigidbodies
 
-            if (generateColliders)
-            {
-                var mc = go.AddComponent<MeshCollider>();
-                mc.sharedMesh = mesh;
-                mc.convex = false; // keep non-convex for flat terrain; set to true if needed for rigidbodies
-            }
-
-            // Optionally set layer / tag etc. User can attach audio trigger components later to each go.
+            // TODO: automatically assign audio triggers based on color
         }
 
         // Focus selection on created container
