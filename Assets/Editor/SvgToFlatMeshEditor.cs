@@ -23,6 +23,8 @@ public class SvgToFlatMeshEditor : EditorWindow
         SamplingStepSize = 0.01f
     };
 
+    [SerializeField] private ColorFolderMap colorFolderMap;
+
     [MenuItem("Tools/SVG → Flat Mesh Regions")]
     static void OpenWindow() {
         var w = GetWindow<SvgToFlatMeshEditor>("SVG → Flat Mesh");
@@ -160,7 +162,12 @@ public class SvgToFlatMeshEditor : EditorWindow
             // Add tag to disable mesh renderer before build
             go.tag = "EditorOnlyMeshRenderer";
 
-            // TODO: automatically assign audio triggers based on color
+            // Automatically assign audio triggers based on color
+            string folder = colorFolderMap.GetFolder(color);
+            if (folder != null)
+            {
+                // TODO: automatically assign audio triggers
+            }
         }
 
         // Focus selection on created container
