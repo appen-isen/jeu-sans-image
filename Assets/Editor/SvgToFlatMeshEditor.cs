@@ -92,6 +92,8 @@ public class SvgToFlatMeshEditor : EditorWindow
             return;
         }
 
+        Vector2 sceneCenter = VectorUtils.SceneNodeBounds(sceneInfo.Scene.Root).center;
+
         // Gather shapes by fill color. We'll traverse the scene tree.
         var shapesByColor = new Dictionary<Color, List<SceneNodeShapeEntry>>(new ColorEqualityComparer());
 
@@ -139,7 +141,7 @@ public class SvgToFlatMeshEditor : EditorWindow
             }
 
             // Build Mesh from geoms
-            Mesh mesh = BuildMeshFromGeometries(geoms, meshScale);
+            Mesh mesh = BuildMeshFromGeometries(geoms, sceneCenter, meshScale);
 
             // Create GameObject for this color region
             string colorName = ColorToName(color);
@@ -225,7 +227,7 @@ public class SvgToFlatMeshEditor : EditorWindow
     }
 
     // Build a Mesh from VectorUtils.Geometry list
-    Mesh BuildMeshFromGeometries(List<VectorUtils.Geometry> geoms, float globalScale)
+    Mesh BuildMeshFromGeometries(List<VectorUtils.Geometry> geoms, Vector2 geomsCenter, float globalScale)
     {
         var verts = new List<Vector3>();
         var uvs = new List<Vector2>();
@@ -240,23 +242,25 @@ public class SvgToFlatMeshEditor : EditorWindow
             for (int i = 0; i < g.Vertices.Length; i++)
             {
                 var v2 = g.Vertices[i];
+                
                 // Map XY -> XZ plane; Y = 0
-                Vector3 v3 = new Vector3(v2.x, 0f, v2.y) * globalScale;
+                Vector3 v3 = new Vector3(v2.x-geomsCenter.x, 0f, -v2.y+geomsCenter.y) * globalScale;
                 verts.Add(v3);
 
                 // UVs: If geometry provides UV, use it; otherwise use XY mapped to UV
                 if (g.UVs != null && g.UVs.Length == g.Vertices.Length)
                     uvs.Add(g.UVs[i]);
                 else
-                    uvs.Add(new Vector2(v2.x, v2.y));
+                    uvs.Add(new Vector2(v2.x, -v2.y));
             }
 
             // Add indices (triangles)
             for (int i = 0; i < g.Indices.Length; i += 3)
             {
-                // VectorUtils yields triangles in clockwise winding; Unity expects clockwise for front? We'll keep it.
-                indices.Add(baseIndex + g.Indices[i]);
+                // VectorUtils yields triangles in clockwise winding
+                // Unity is supposed to use clockwise as well, but in practice we find we need to flip the order to get correct facing.
                 indices.Add(baseIndex + g.Indices[i + 1]);
+                indices.Add(baseIndex + g.Indices[i]);
                 indices.Add(baseIndex + g.Indices[i + 2]);
             }
 
