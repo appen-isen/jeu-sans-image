@@ -278,6 +278,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ears: {fileID: 493760352}
+  minRotation: -90
+  maxRotation: 90
   speed: 15
   sensitivity: 70
   maxSpeed: 10
@@ -722,8 +724,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a895e8a798ee0b4a9a5ea33d6b07f4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minRotation: -90
-  maxRotation: 90
 --- !u!1 &990919146
 GameObject:
   m_ObjectHideFlags: 0
@@ -1018,7 +1018,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: cb6c4215b8cd7b64cbee2efc72969545, type: 3}
+  m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: cb6c4215b8cd7b64cbee2efc72969545, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
