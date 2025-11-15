@@ -9,15 +9,14 @@ using UnityEngine;
 using UnityEditor;
 using Unity.VectorGraphics; // From com.unity.vectorgraphics
 
-public class SvgToFlatMeshEditor : EditorWindow
+public class SvgToFlatMeshEditor : EditorWindow 
 {
     TextAsset svgFile;
     Material editorMaterial;
     float pixelsPerUnit = 100.0f;
     Transform parentTransform;
     float meshScale = 1f;
-    VectorUtils.TessellationOptions tessOptions = new VectorUtils.TessellationOptions()
-    {
+    VectorUtils.TessellationOptions tessOptions = new VectorUtils.TessellationOptions() {
         StepDistance = 1.0f,
         MaxCordDeviation = 0.5f,
         MaxTanAngleDeviation = 0.1f,
@@ -25,14 +24,12 @@ public class SvgToFlatMeshEditor : EditorWindow
     };
 
     [MenuItem("Tools/SVG → Flat Mesh Regions")]
-    static void OpenWindow()
-    {
+    static void OpenWindow() {
         var w = GetWindow<SvgToFlatMeshEditor>("SVG → Flat Mesh");
         w.minSize = new Vector2(460, 320);
     }
 
-    void OnGUI()
-    {
+    void OnGUI() {
         EditorGUILayout.LabelField("SVG → Flat Mesh (separate GameObjects per fill color)", EditorStyles.boldLabel);
         EditorGUILayout.Space();
 
@@ -44,27 +41,22 @@ public class SvgToFlatMeshEditor : EditorWindow
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Tessellation Options", EditorStyles.boldLabel);
-        tessOptions.StepDistance = EditorGUILayout.FloatField("Step Distance", tessOptions.StepDistance);
-        tessOptions.MaxCordDeviation = EditorGUILayout.FloatField("Max Cord Deviation", tessOptions.MaxCordDeviation);
-        tessOptions.MaxTanAngleDeviation = EditorGUILayout.FloatField("Max Tan Angle Deviation", tessOptions.MaxTanAngleDeviation);
-        tessOptions.SamplingStepSize = EditorGUILayout.FloatField("Sampling Step Size", tessOptions.SamplingStepSize);
+        tessOptions.StepDistance = EditorGUILayout.FloatField(new GUIContent("Step Distance", "From manual: The uniform tessellation step distance."), tessOptions.StepDistance);
+        tessOptions.MaxCordDeviation = EditorGUILayout.FloatField(new GUIContent("Max Cord Deviation", "From manual: The maximum distance on the cord to a straight line between to points after which more tessellation will be generated"), tessOptions.MaxCordDeviation);
+        tessOptions.MaxTanAngleDeviation = EditorGUILayout.FloatField(new GUIContent("Max Tan Angle Deviation", "From manual: The maximum angle (in degrees) between the curve tangent and the next point after which more tessellation will be generated"), tessOptions.MaxTanAngleDeviation);
+        tessOptions.SamplingStepSize = EditorGUILayout.FloatField(new GUIContent("Sampling Step Size", "From manual: The number of samples used internally to evaluate the curves. More samples = higher quality. Should be between 0 and 1 (inclusive)"), tessOptions.SamplingStepSize);
 
         EditorGUILayout.Space();
 
-        if (GUILayout.Button("Generate Meshes from SVG"))
-        {
-            if (svgFile == null)
-            {
+        if (GUILayout.Button("Generate Meshes from SVG")) {
+            if (svgFile == null) {
                 EditorUtility.DisplayDialog("Error", "Please assign an SVG (.svg) TextAsset.", "OK");
             }
-            else
-            {
-                try
-                {
+            else {
+                try {
                     GenerateMeshesFromSVG();
                 }
-                catch (Exception e)
-                {
+                catch (Exception e) {
                     Debug.LogException(e);
                     EditorUtility.DisplayDialog("Error", "Exception: " + e.Message, "OK");
                 }
@@ -72,22 +64,19 @@ public class SvgToFlatMeshEditor : EditorWindow
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.HelpBox("This tool creates one GameObject per fill-color region in the SVG. Each GameObject receives a MeshRenderer + MeshFilter and, optionally, a MeshCollider. Output meshes lie flat on the XZ plane (Y = 0).", MessageType.Info);
+        EditorGUILayout.HelpBox("This tool creates one GameObject per fill-color region in the SVG. Each GameObject receives a MeshRenderer + MeshFilter and a MeshCollider. Output meshes lie flat on the XZ plane (Y = 0).", MessageType.Info);
     }
 
-    void GenerateMeshesFromSVG()
-    {
+    void GenerateMeshesFromSVG() {
         // Parse SVG
         var svgText = svgFile.text;
-        if (string.IsNullOrEmpty(svgText))
-        {
+        if (string.IsNullOrEmpty(svgText)) {
             EditorUtility.DisplayDialog("Error", "SVG file is empty.", "OK");
             return;
         }
 
         var sceneInfo = SVGParser.ImportSVG(new StringReader(svgText));
-        if (sceneInfo.Equals(default(SVGParser.SceneInfo)) || sceneInfo.Scene == null)
-        {
+        if (sceneInfo.Equals(default(SVGParser.SceneInfo)) || sceneInfo.Scene == null) {
             EditorUtility.DisplayDialog("Error", "Failed to import SVG. Make sure the file is valid and Vector Graphics package is installed.", "OK");
             return;
         }
@@ -99,19 +88,19 @@ public class SvgToFlatMeshEditor : EditorWindow
 
         TraverseAndCollectShapes(sceneInfo.Scene.Root, Matrix2D.identity, shapesByColor);
 
-        if (shapesByColor.Count == 0)
-        {
+        if (shapesByColor.Count == 0) {
             EditorUtility.DisplayDialog("Result", "No filled shapes found in the SVG.", "OK");
             return;
         }
 
         // Create parent container
         GameObject container = new GameObject(Path.GetFileNameWithoutExtension(svgFile.name) + "_SVG_Meshes");
-        if (parentTransform != null) container.transform.SetParent(parentTransform, false);
+        if (parentTransform != null) {
+            container.transform.SetParent(parentTransform, false);
+        }
 
         // For each color group, tessellate shapes into geometry and build a mesh
-        foreach (var kv in shapesByColor)
-        {
+        foreach (var kv in shapesByColor) {
             Color color = kv.Key;
             List<SceneNodeShapeEntry> entries = kv.Value;
 
@@ -120,11 +109,9 @@ public class SvgToFlatMeshEditor : EditorWindow
             tmpScene.Root = new SceneNode();
             tmpScene.Root.Children = new List<SceneNode>();
 
-            foreach (var entry in entries)
-            {
+            foreach (var entry in entries) {
                 // create a shallow copy Node with transform and the original shapes (the shape objects can be reused)
-                SceneNode copyNode = new SceneNode()
-                {
+                SceneNode copyNode = new SceneNode() {
                     Transform = entry.Node.Transform, // keep transform
                     Shapes = new List<Shape>() { entry.Shape }
                 };
@@ -134,8 +121,7 @@ public class SvgToFlatMeshEditor : EditorWindow
             // Tessellate the tmpScene
             var geoms = VectorUtils.TessellateScene(tmpScene, tessOptions);
 
-            if (geoms == null || geoms.Count == 0)
-            {
+            if (geoms == null || geoms.Count == 0) {
                 Debug.LogWarning($"No geometry generated for color {color} (skipping).");
                 continue;
             }
@@ -153,15 +139,13 @@ public class SvgToFlatMeshEditor : EditorWindow
 
             var mr = go.AddComponent<MeshRenderer>();
 
-            if (editorMaterial != null)
-            {
+            if (editorMaterial != null) {
                 // instantiate a material so each region can have its own color without overwriting the original asset
                 Material matInstance = new Material(editorMaterial);
                 matInstance.color = color;
                 mr.sharedMaterial = matInstance;
             }
-            else
-            {
+            else {
                 // Create a quick default material
                 var mat = new Material(Shader.Find("Standard"));
                 mat.color = color;
@@ -185,32 +169,30 @@ public class SvgToFlatMeshEditor : EditorWindow
     }
 
     // Recursively traverse scene nodes and collect filled shapes
-    void TraverseAndCollectShapes(SceneNode node, Matrix2D parentTransform, Dictionary<Color, List<SceneNodeShapeEntry>> shapesByColor)
-    {
-        if (node == null) return;
+    void TraverseAndCollectShapes(SceneNode node, Matrix2D parentTransform, Dictionary<Color, List<SceneNodeShapeEntry>> shapesByColor) {
+        if (node == null) {
+            return;
+        }
 
         // Combine transforms (VectorGraphics uses Matrix2D)
         Matrix2D currentTransform = parentTransform * node.Transform;
 
-        if (node.Shapes != null && node.Shapes.Count > 0)
-        {
-            foreach (var shape in node.Shapes)
-            {
-                if (shape == null) continue;
+        if (node.Shapes != null && node.Shapes.Count > 0) {
+            foreach (var shape in node.Shapes) {
+                if (shape == null) {
+                    continue;
+                }
                 // Only treat fills (SolidFill)
-                if (shape.Fill is SolidFill sf)
-                {
+                if (shape.Fill is SolidFill sf) {
                     Color col = sf.Color;
                     // Note: color comes as linear RGBA. Convert to Unity's Color (already same type)
-                    if (!shapesByColor.TryGetValue(col, out List<SceneNodeShapeEntry> list))
-                    {
+                    if (!shapesByColor.TryGetValue(col, out List<SceneNodeShapeEntry> list)) {
                         list = new List<SceneNodeShapeEntry>();
                         shapesByColor[col] = list;
                     }
 
                     // Store the shape together with a node that carries the proper transform
-                    SceneNode fakeNode = new SceneNode()
-                    {
+                    SceneNode fakeNode = new SceneNode() {
                         Transform = currentTransform,
                         Shapes = new List<Shape>() { shape }
                     };
@@ -219,28 +201,27 @@ public class SvgToFlatMeshEditor : EditorWindow
             }
         }
 
-        if (node.Children != null && node.Children.Count > 0)
-        {
-            foreach (var c in node.Children)
+        if (node.Children != null && node.Children.Count > 0) {
+            foreach (var c in node.Children) {
                 TraverseAndCollectShapes(c, currentTransform, shapesByColor);
+            }
         }
     }
 
     // Build a Mesh from VectorUtils.Geometry list
-    Mesh BuildMeshFromGeometries(List<VectorUtils.Geometry> geoms, Vector2 geomsCenter, float globalScale)
-    {
+    Mesh BuildMeshFromGeometries(List<VectorUtils.Geometry> geoms, Vector2 geomsCenter, float globalScale) {
         var verts = new List<Vector3>();
         var uvs = new List<Vector2>();
         var indices = new List<int>();
 
         int baseIndex = 0;
-        foreach (var g in geoms)
-        {
-            if (g == null || g.Vertices == null || g.Indices == null) continue;
+        foreach (var g in geoms) {
+            if (g == null || g.Vertices == null || g.Indices == null) {
+                continue;
+            }
 
             // Add vertices (VectorUtils uses Vector2 for geometry XY)
-            for (int i = 0; i < g.Vertices.Length; i++)
-            {
+            for (int i = 0; i < g.Vertices.Length; i++) {
                 var v2 = g.Vertices[i];
                 
                 // Map XY -> XZ plane; Y = 0
@@ -248,15 +229,16 @@ public class SvgToFlatMeshEditor : EditorWindow
                 verts.Add(v3);
 
                 // UVs: If geometry provides UV, use it; otherwise use XY mapped to UV
-                if (g.UVs != null && g.UVs.Length == g.Vertices.Length)
+                if (g.UVs != null && g.UVs.Length == g.Vertices.Length) {
                     uvs.Add(g.UVs[i]);
-                else
+                }
+                else {
                     uvs.Add(new Vector2(v2.x, -v2.y));
+                }
             }
 
             // Add indices (triangles)
-            for (int i = 0; i < g.Indices.Length; i += 3)
-            {
+            for (int i = 0; i < g.Indices.Length; i += 3) {
                 // VectorUtils yields triangles in clockwise winding
                 // Unity is supposed to use clockwise as well, but in practice we find we need to flip the order to get correct facing.
                 indices.Add(baseIndex + g.Indices[i + 1]);
@@ -282,34 +264,28 @@ public class SvgToFlatMeshEditor : EditorWindow
     }
 
     // Helper to produce a safe string for color names
-    string ColorToName(Color c)
-    {
+    string ColorToName(Color c) {
         // Try to present RGBA hex
         Color32 cc = c;
         return $"{cc.r:X2}{cc.g:X2}{cc.b:X2}{(cc.a < 255 ? cc.a.ToString("X2") : "")}";
     }
 
     // Small helper type to keep a shape and associated node (with transform)
-    class SceneNodeShapeEntry
-    {
+    class SceneNodeShapeEntry {
         public SceneNode Node;
         public Shape Shape;
     }
 
     // Simple color comparer for use as Dictionary key
-    class ColorEqualityComparer : IEqualityComparer<Color>
-    {
-        public bool Equals(Color x, Color y)
-        {
+    class ColorEqualityComparer : IEqualityComparer<Color> {
+        public bool Equals(Color x, Color y) {
             // Compare with exactness; you could add tolerance if you want near-colors grouped
             return Mathf.Approximately(x.r, y.r) && Mathf.Approximately(x.g, y.g) &&
                    Mathf.Approximately(x.b, y.b) && Mathf.Approximately(x.a, y.a);
         }
 
-        public int GetHashCode(Color obj)
-        {
-            unchecked
-            {
+        public int GetHashCode(Color obj) {
+            unchecked {
                 int hash = 17;
                 hash = hash * 23 + Mathf.RoundToInt(obj.r * 255f);
                 hash = hash * 23 + Mathf.RoundToInt(obj.g * 255f);
