@@ -22,6 +22,7 @@ public class SvgToFlatMeshEditor : EditorWindow
         MaxTanAngleDeviation = 0.1f,
         SamplingStepSize = 0.01f
     };
+    Quaternion meshRotation = Quaternion.identity;
 
     [SerializeField] private ColorFolderMap colorFolderMap;
 
@@ -48,6 +49,10 @@ public class SvgToFlatMeshEditor : EditorWindow
         tessOptions.MaxTanAngleDeviation = EditorGUILayout.FloatField(new GUIContent("Max Tan Angle Deviation", "From manual: The maximum angle (in degrees) between the curve tangent and the next point after which more tessellation will be generated"), tessOptions.MaxTanAngleDeviation);
         tessOptions.SamplingStepSize = EditorGUILayout.FloatField(new GUIContent("Sampling Step Size", "From manual: The number of samples used internally to evaluate the curves. More samples = higher quality. Should be between 0 and 1 (inclusive)"), tessOptions.SamplingStepSize);
 
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Map rotation options", EditorStyles.boldLabel);
+        meshRotation = Quaternion.Euler(EditorGUILayout.Vector3Field(new GUIContent("Mesh Rotation (degrees)", "Rotation to apply to the generated meshes"), meshRotation.eulerAngles));
+        
         EditorGUILayout.Space();
 
         if (GUILayout.Button("Generate Meshes from SVG")) {
@@ -284,6 +289,7 @@ public class SvgToFlatMeshEditor : EditorWindow
                 
                 // Map XY -> XZ plane; Y = 0
                 Vector3 v3 = new Vector3(v2.x-geomsCenter.x, 0f, -v2.y+geomsCenter.y) * globalScale;
+                v3 = meshRotation * v3; // Apply rotation
                 verts.Add(v3);
             }
 
@@ -326,8 +332,8 @@ public class SvgToFlatMeshEditor : EditorWindow
             for (int i=0; i<bezier.Length; i++)
             {
                 Vector2 v2 = bezier[i].P0;
-                Vector3 v3_low = (new Vector3(v2.x, 0f, -v2.y) - geomsCenter3D) * globalScale;
-                Vector3 v3_high = (new Vector3(v2.x, height, -v2.y) - geomsCenter3D) * globalScale;
+                Vector3 v3_low = meshRotation * (new Vector3(v2.x, 0f, -v2.y) - geomsCenter3D) * globalScale;
+                Vector3 v3_high = meshRotation * (new Vector3(v2.x, height, -v2.y) - geomsCenter3D) * globalScale;
                 verts.Add(v3_low);
                 verts.Add(v3_low);  // Back face duplicate
                 verts.Add(v3_high);
