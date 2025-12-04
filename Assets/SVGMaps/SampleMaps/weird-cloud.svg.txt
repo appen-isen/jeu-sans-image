@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="2.66667in"
+   height="2.66667in"
+   viewBox="0 0 800 800"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="weird-cloud.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="in"
+     inkscape:zoom="3.0195274"
+     inkscape:cx="127.66899"
+     inkscape:cy="127.66899"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <path
+     id="path2"
+     style="fill:#878d8e;fill-opacity:1;fill-rule:evenodd"
+     d="M 451.8976 150.40874 C 375.6976 150.40874 311.04038 199.56723 287.78038 268.01723 C 261.31038 255.16723 231.80698 247.97941 200.42698 247.97941 C 89.616983 247.97941 0 337.78871 0 448.77871 C 0 555.41871 83.200622 642.7818 188.14062 649.2118 L 188.14062 649.59021 L 627.75186 649.59021 C 723.05186 649.02021 799.99895 571.50256 799.99895 476.01256 C 799.80895 380.15256 722.2913 302.4288 626.4213 302.4288 L 623.96769 302.4288 C 613.37769 216.7788 540.3876 150.40874 451.8976 150.40874 z M 217.49849 454.4977 L 234.00238 478.50279 L 235.49774 502.50178 L 203.99754 502.50178 L 202.50218 478.50279 L 217.49849 454.4977 z "
+     inkscape:label="cloud" />
+  <path
+     id="Water droplet-7"
+     fill="none"
+     stroke="#000000"
+     stroke-width="1"
+     d="m 217.5,454.5 -15,24 1.5,24 h 31.5 l -1.5,-24 z"
+     sodipodi:nodetypes="cccccc"
+     style="display:inline;fill:#4ea0ee;fill-opacity:1"
+     inkscape:label="Water droplet" />
+  <path
+     id="wall"
+     fill="none"
+     stroke="black"
+     stroke-width="1"
+     d="m 443,381 -18,-89 -64,63 8,99 131,63 64,-75 102,7 -49,-104 H 490 Z"
+     style="stroke:#e9e924;stroke-opacity:1"
+     sodipodi:nodetypes="cccccccccc" />
+</svg>
