@@ -295,11 +295,23 @@ public class SvgToFlatMeshEditor : EditorWindow
 
             // Add indices (triangles)
             for (int i = 0; i < g.Indices.Length; i += 3) {
-                // VectorUtils yields triangles in clockwise winding
-                // Unity is supposed to use clockwise as well, but in practice we find we need to flip the order to get correct facing.
-                indices.Add(baseIndex + g.Indices[i + 1]);
-                indices.Add(baseIndex + g.Indices[i]);
-                indices.Add(baseIndex + g.Indices[i + 2]);
+                int i1 = baseIndex + g.Indices[i];
+                int i2 = baseIndex + g.Indices[i + 1];
+                int i3 = baseIndex + g.Indices[i + 2];
+                if (!IsClockwise( g.Vertices[i1], g.Vertices[i2], g.Vertices[i3] ))
+                {
+                    // Add triangle with reversed winding
+                    indices.Add(i1);
+                    indices.Add(i3);
+                    indices.Add(i2);
+                }
+                else
+                {
+                    // Add triangle with correct winding
+                    indices.Add(i3);
+                    indices.Add(i1);
+                    indices.Add(i2);
+                }
             }
 
             baseIndex += g.Vertices.Length;
@@ -315,6 +327,12 @@ public class SvgToFlatMeshEditor : EditorWindow
         mesh.RecalculateBounds();
 
         return mesh;
+    }
+
+    // Helper to determine if 3 points are in clockwise order
+    bool IsClockwise(Vector2 a, Vector2 b, Vector2 c)
+    {
+        return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
     }
 
     // Build an extruded Mesh from geometries
