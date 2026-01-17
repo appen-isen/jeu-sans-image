@@ -15,7 +15,7 @@ public class SvgToFlatMeshEditor : EditorWindow
     Material editorMaterial;
     float pixelsPerUnit = 100.0f;
     Transform parentTransform;
-    float meshScale = 1f;
+    float meshScale = 0.1f;
     VectorUtils.TessellationOptions tessOptions = new VectorUtils.TessellationOptions() {
         StepDistance = 1.0f,
         MaxCordDeviation = 0.5f,
@@ -23,6 +23,9 @@ public class SvgToFlatMeshEditor : EditorWindow
         SamplingStepSize = 0.01f
     };
     Quaternion meshRotation = Quaternion.identity;
+
+    float polygonSimplificationTolerance = 0.5f;
+    bool enablePolygonSimplification = true;
 
     [SerializeField] private ColorFolderMap colorFolderMap;
 
@@ -48,6 +51,14 @@ public class SvgToFlatMeshEditor : EditorWindow
         tessOptions.MaxCordDeviation = EditorGUILayout.FloatField(new GUIContent("Max Cord Deviation", "From manual: The maximum distance on the cord to a straight line between to points after which more tessellation will be generated"), tessOptions.MaxCordDeviation);
         tessOptions.MaxTanAngleDeviation = EditorGUILayout.FloatField(new GUIContent("Max Tan Angle Deviation", "From manual: The maximum angle (in degrees) between the curve tangent and the next point after which more tessellation will be generated"), tessOptions.MaxTanAngleDeviation);
         tessOptions.SamplingStepSize = EditorGUILayout.FloatField(new GUIContent("Sampling Step Size", "From manual: The number of samples used internally to evaluate the curves. More samples = higher quality. Should be between 0 and 1 (inclusive)"), tessOptions.SamplingStepSize);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Polygon Simplification", EditorStyles.boldLabel);
+        enablePolygonSimplification = EditorGUILayout.Toggle(new GUIContent("Enable Polygon Simplification", "Reduce points in polygons before tessellation for minimal triangles."), enablePolygonSimplification);
+        if (enablePolygonSimplification)
+        {
+            polygonSimplificationTolerance = EditorGUILayout.FloatField(new GUIContent("Simplification Tolerance", "Higher = fewer points, lower = more detail. Typical range: 0.1 - 2.0"), polygonSimplificationTolerance);
+        }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Map rotation options", EditorStyles.boldLabel);
@@ -151,22 +162,103 @@ public class SvgToFlatMeshEditor : EditorWindow
     }
 
     // Tesselate a list of SceneNodeShapeEntry into VectorUtils.Geometry list
-    List<VectorUtils.Geometry> TesselateIntoGeometries(List<SceneNodeShapeEntry> entries) {
-        // Build a temporary scene that contains all these shapes combined (preserving transforms)
+    // Simplify polygon points using Ramer–Douglas–Peucker algorithm
+    List<Vector2> SimplifyPolygon(List<Vector2> points, float tolerance)
+    {
+        if (points == null || points.Count < 3)
+            return points;
+
+        bool[] keep = new bool[points.Count];
+        keep[0] = true;
+        keep[points.Count - 1] = true;
+
+        void Simplify(int first, int last)
+        {
+            float maxDist = 0f;
+            int index = 0;
+            Vector2 a = points[first];
+            Vector2 b = points[last];
+            for (int i = first + 1; i < last; i++)
+            {
+                float dist = DistanceToSegment(points[i], a, b);
+                if (dist > maxDist)
+                {
+                    maxDist = dist;
+                    index = i;
+                }
+            }
+            if (maxDist > tolerance)
+            {
+                keep[index] = true;
+                Simplify(first, index);
+                Simplify(index, last);
+            }
+        }
+
+        Simplify(0, points.Count - 1);
+
+        List<Vector2> result = new List<Vector2>();
+        for (int i = 0; i < points.Count; i++)
+            if (keep[i]) result.Add(points[i]);
+        return result;
+    }
+
+    // Distance from point p to segment ab
+    float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        float l2 = (b - a).sqrMagnitude;
+        if (l2 == 0f) return (p - a).magnitude;
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, b - a) / l2);
+        Vector2 proj = a + t * (b - a);
+        return (p - proj).magnitude;
+    }
+
+    List<VectorUtils.Geometry> TesselateIntoGeometries(List<SceneNodeShapeEntry> entries)
+    {
         Scene tmpScene = new Scene();
         tmpScene.Root = new SceneNode();
         tmpScene.Root.Children = new List<SceneNode>();
 
-        foreach (var entry in entries) {
-            // create a shallow copy Node with transform and the original shapes (the shape objects can be reused)
-            SceneNode copyNode = new SceneNode() {
-                Transform = entry.Node.Transform, // keep transform
-                Shapes = new List<Shape>() { entry.Shape }
+        foreach (var entry in entries)
+        {
+            Shape shape = entry.Shape;
+            // Only simplify polygons (ignore curves for now)
+            if (shape.Contours != null && shape.Contours.Length == 1 && shape.Contours[0].Segments.Length > 2)
+            {
+                // Extract points from Bezier segments (P0)
+                List<Vector2> pts = new List<Vector2>();
+                foreach (var seg in shape.Contours[0].Segments)
+                    pts.Add(seg.P0);
+                // If the shape is almost a polygon (all segments are lines or nearly lines)
+                bool almostPolygon = true;
+                foreach (var seg in shape.Contours[0].Segments)
+                {
+                    if ((seg.P0 - seg.P1).magnitude > 0.01f || (seg.P0 - seg.P2).magnitude > 0.01f)
+                    {
+                        almostPolygon = false;
+                        break;
+                    }
+                }
+                if (almostPolygon && enablePolygonSimplification)
+                {
+                    // Simplify polygon
+                    pts = SimplifyPolygon(pts, polygonSimplificationTolerance);
+                    // Rebuild contour with simplified points
+                    BezierPathSegment[] newSegs = new BezierPathSegment[pts.Count];
+                    for (int i = 0; i < pts.Count; i++)
+                    {
+                        newSegs[i] = new BezierPathSegment { P0 = pts[i], P1 = pts[i], P2 = pts[i] };
+                    }
+                    shape.Contours[0].Segments = newSegs;
+                }
+            }
+            SceneNode copyNode = new SceneNode()
+            {
+                Transform = entry.Node.Transform,
+                Shapes = new List<Shape>() { shape }
             };
             tmpScene.Root.Children.Add(copyNode);
         }
-
-        // Tessellate the tmpScene
         return VectorUtils.TessellateScene(tmpScene, tessOptions);
     }
 
@@ -295,9 +387,9 @@ public class SvgToFlatMeshEditor : EditorWindow
 
             // Add indices (triangles)
             for (int i = 0; i < g.Indices.Length; i += 3) {
-                int i1 = baseIndex + g.Indices[i];
-                int i2 = baseIndex + g.Indices[i + 1];
-                int i3 = baseIndex + g.Indices[i + 2];
+                int i1 = (baseIndex + g.Indices[i]) % g.Vertices.Length;
+                int i2 = (baseIndex + g.Indices[(i + 1)% g.Indices.Length]) % g.Vertices.Length;
+                int i3 = (baseIndex + g.Indices[(i + 2)% g.Indices.Length]) % g.Vertices.Length;
                 if (!IsClockwise( g.Vertices[i1], g.Vertices[i2], g.Vertices[i3] ))
                 {
                     // Add triangle with reversed winding
