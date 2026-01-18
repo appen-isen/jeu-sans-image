@@ -11,7 +11,7 @@ using UnityEngine;
 public class SoundManager : MonoBehaviour
 {
     [SerializeField] private int initialPoolSize = 10;
-    [SerializeField] private GameObject audioSourcePrefab;
+    [SerializeField] public GameObject audioSourcePrefab;
     
     private List<AudioSource> audioPool;
     private Queue<AudioSource> availableAudios;
