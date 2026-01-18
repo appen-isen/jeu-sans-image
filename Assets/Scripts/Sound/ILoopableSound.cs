@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using UnityEngine;
 
 public abstract class ILoopableSound : MonoBehaviour
@@ -30,10 +31,11 @@ public abstract class ILoopableSound : MonoBehaviour
         PlayLoopableSound();
     }
 
-    public void PlayLoopableSound(Transform parent)
+    public void PlayLoopableSound(Transform parent, bool spatial)
     {
         CreateSource();
         source.transform.SetParent(parent, false);
+        source.spatialBlend = spatial ? 1 : 0;
         PlayLoopableSound();
     }
 
