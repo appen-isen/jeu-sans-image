@@ -37,4 +37,9 @@ public class MusicManager : MonoBehaviour
     {
         music.PlayLoopableSound(parent, true);
     }
+
+    public void StopMusic(ILoopableSound music)
+    {
+        music.StopLoopableSound();
+    }
 }
