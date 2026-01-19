@@ -39,9 +39,9 @@ public abstract class ILoopableSound : MonoBehaviour
         PlayLoopableSound();
     }
 
-    protected virtual void PlayLoopableSound() { }
+    public virtual void PlayLoopableSound() { }
 
-    protected virtual void StopLoopableSound()
+    public virtual void StopLoopableSound()
     {
         DestroySource();
     }

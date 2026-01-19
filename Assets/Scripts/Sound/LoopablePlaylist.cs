@@ -7,7 +7,7 @@ public class LoopablePlaylist : ILoopableSound
     [SerializeField] List<AudioClip> playlist;
     Coroutine playlistCoroutine = null;
 
-    protected override void PlayLoopableSound()
+    public override void PlayLoopableSound()
     {
         base.PlayLoopableSound();
 
@@ -22,7 +22,7 @@ public class LoopablePlaylist : ILoopableSound
         source.Play();
     }
 
-    protected override void StopLoopableSound()
+    public override void StopLoopableSound()
     {
         StopCoroutine(playlistCoroutine);
         source.Stop();
